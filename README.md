@@ -1,48 +1,32 @@
-# Paper Calendar
+# TaskCalendar
 
-基于原桌面便签框架的 Qt 会议时间轴，布局与 `docs/ui-prototype.html` 保持一致。详细设计见 `docs/design.zh-CN.md`。
+紧凑的 Qt 桌面任务时间轴。每行一个任务，可添加任意数量的自定义节点，显示节点名称、日期和倒计时。节点统一使用浅色样式，没有颜色分类、图例或选色器。
 
 ## 使用
 
-- 滚轮平移时间段；Ctrl + 滚轮缩放；Shift + 滚轮上下滚动列表。
-- 单击会议名称编辑，编辑框内可删除。
-- 拖动左侧六点拖柄排序；选中行后 Alt + ↑ / ↓ 也可排序，顺序自动保存。
-- 点击图例换色，节点、浅色标签与区间同步更新，重启保留。
-- Unlock 时可拖动标题区域、拖动边缘缩放；Lock 锁定窗口位置和大小。
-- 越界时点击“箭头＋今天日期”归位，× 退出。固定使用桌面伴随，不再提供模式选择。窗口背景为半透明灰色。
+- 点击「＋ 任务」创建任务；点击任务名称编辑，动态增删节点。日期可直接粘贴 YYYY-MM-DD、YYYY/M/D、YYYYMMDD，或打开日历；留空表示待定。
+- 节点显示名称、日期和剩余天数；已过期显示经过天数。点击节点展开完整详情，可勾选完成；单个节点标签长按 0.5 秒显示圆环读条并切换完成状态，移出取消，短按仍展开详情，聚合标签只展开。
+- 疏松标签显示名称、日期和倒计时；相互拥挤的标签只显示完整名称，以紧凑的两行错开；非常密集时合并节点为「名称 +N」，点击可展开全部节点，没有固定节点数量限制。
+- 左侧标题区滚轮上下滚动任务列表；右侧时间轴滚轮平移时间，Ctrl + 滚轮缩放。日期表头和今天标注固定在顶部。今天越界时点击边缘箭头归位；每次启动默认显示今天。
+- 拖动六点柄排序；Alt + ↑ / ↓ 也可排序。锁图标锁定窗口位置和大小。
+- 保留半透明灰色背景和默认桌面伴随逻辑；不启用 WorkerW 实验挂载。
 
-图例与会议数量合并在底栏。五项日期可直接输入、粘贴或用日历选择，留空表示尚未公布；不再提供“日期已确定”勾选。新增第五个“最终结果”日期；旧记录兼容保留，补填后显示节点。AoE 和时区转换不做改动。
+## 运行与数据
 
-摘要前不绘制人为准备区间。日期标签自动错层并用引线对应节点；悬停查看完整事件、日期及剩余天数；点击节点或日期标签展开详情卡片，点击外部或按 Esc 关闭。首次运行没有演示记录。
+直接打开 build-task/TaskCalendar.exe，已附运行依赖。
 
-数据存于 Qt AppDataLocation 下的 conferences.json 和 settings.ini，Windows 通常为 `%APPDATA%/PaperCalendar/PaperCalendar/`。也可以指定便携目录：
-
-```powershell
-.\build-calendar\PaperCalendar.exe --data-dir .\my-data
-```
+数据独立保存于 Qt AppDataLocation 下的 TaskCalendar/TaskCalendar/tasks.json 和 settings.ini，与 PaperCalendar 的会议数据分离。支持 --data-dir 指定便携数据目录。--demo 仅在内存生成演示任务，建议配合独立 --data-dir；演示数据发生编辑后会正常保存到该目录。
 
 ## 构建与验证
 
-需要 CMake 3.16+、C++17、Qt 5.15+ 或 Qt 6 Widgets。编译器须与 Qt ABI 匹配，Qt 与编译器的 bin 应加入 PATH。默认构建测试需要 Qt Test，可用 `-DBUILD_TESTING=OFF` 关闭。
+需要 CMake、C++17、Qt Widgets，测试还需要 Qt Test。使用新目录 build-task，复制来的 build-calendar 缓存不能复用。
 
 ```powershell
-cmake -S . -B build -G Ninja -DCMAKE_PREFIX_PATH="你的 Qt 安装目录"
-cmake --build build
-ctest --test-dir build --output-on-failure
+cmake -S . -B build-task -G Ninja -DCMAKE_PREFIX_PATH="你的 Qt 安装目录"
+cmake --build build-task
+ctest --test-dir build-task --output-on-failure
 ```
 
-本机当前新版位于 build-calendar/desktop-fix（旧版运行中，避免覆盖），已附 Qt 和编译器运行库。测试使用构建目录下的临时数据目录，不访问真实会议数据；Qt 快照中的会议为演示记录。Windows 原生平台测试需以 `QT_QPA_PLATFORM=windows` 运行 CalendarTests；CTest 默认使用 offscreen。
+测试覆盖任意节点持久化、日期和倒计时、400 个密集节点布局、动态编辑、完成和排序保存、损坏数据保护、平移缩放、节点展开及锁定。Windows 原生平台也已运行通过。
 
-桌面伴随使用前台事件、去抖、复核和不抢焦点的临时置顶。Win+D、多显示器、全屏应用、Explorer 重启尚待人工验收。原生边缘锁定逻辑面向 Windows。
-
-旧 StickyNote、ToolBar 文件保留但退出构建。当前数据为日期精度、单实例编辑设计，不支持云同步或并发编辑。
-
-## 本地恢复点与桌面后端研究
-
-当前实现恢复标签：`paper-calendar-baseline-20261026`。已清理历史发布构建，保留 `build-calendar/desktop-fix`。
-
-WorkerW 的本机只读检查、实际问题与实验建议见 `docs/workerw-research.zh-CN.md`。诊断源码为 `tools/desktop_probe.cpp`，本轮没有切换应用后端。
-
-## 可选桌面挂载实验
-
-桌面挂载实验在本机实际显示验证失败，已取消自动启用。两个 exe 普通双击均使用原来的后端；仅显式 `--desktop-host` 启用隔离数据的实验。当前挂载关系检查通过但真实显示失败，原有桌面伴随后端仍为默认。具体运行和已知验证范围见 `docs/workerw-experiment.zh-CN.md`。
+复制保留的旧会议模型、旧测试及 HTML 文档属于原项目参考，当前 CMake 仅编译任务版本。界面截图见 build-task/task-demo.png。

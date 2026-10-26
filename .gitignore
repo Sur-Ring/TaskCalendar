@@ -1,7 +1,9 @@
 /build-calendar/
+/build-task/
 /cmake-build*/
 /.idea/
 /%SystemDrive%/
 /local-backups/
 /out/
 /dist/
+/*.lnk
